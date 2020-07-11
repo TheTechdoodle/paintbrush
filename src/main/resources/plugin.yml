@@ -1,0 +1,15 @@
+name: Paintbrush
+version: ${project.version}
+main: com.darkender.plugins.paintbrush.Paintbrush
+api-version: 1.14
+author: Techdoodle
+commands:
+  paintbrush:
+    permission: paintbrush.get
+    usage: /paintbrush
+    description: Get a paintbrush
+permissions:
+  paintbrush.get:
+    default: op
+  paintbrush.use:
+    default: op
