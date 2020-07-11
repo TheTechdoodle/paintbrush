@@ -198,6 +198,14 @@ public class Paintbrush extends JavaPlugin implements Listener
         }
     }
     
+    private void cycleBlockFromPlayer(Player player, Block block, int amount, boolean offhand)
+    {
+        cycleBlock(block, amount);
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
+                SoundCategory.MASTER, 1.0F, amount > 0 ? 1.0F : 0.6F);
+        displayParticles(getHandScreenLocation(player.getEyeLocation(), offhand), block, amount > 0);
+    }
+    
     @EventHandler
     private void onPlayerInteract(PlayerInteractEvent event)
     {
@@ -207,20 +215,14 @@ public class Paintbrush extends JavaPlugin implements Listener
             int amount = (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) ? 1 : -1;
             if(event.getClickedBlock() != null)
             {
-                cycleBlock(event.getClickedBlock(), amount);
-                displayParticles(
-                        getHandScreenLocation(event.getPlayer().getEyeLocation(), event.getHand() == EquipmentSlot.OFF_HAND),
-                        event.getClickedBlock(), amount > 0);
+                cycleBlockFromPlayer(event.getPlayer(), event.getClickedBlock(), amount, event.getHand() == EquipmentSlot.OFF_HAND);
             }
             else
             {
                 RayTraceResult trace = raytraceFor(event.getPlayer());
                 if(trace != null && trace.getHitBlock() != null)
                 {
-                    cycleBlock(trace.getHitBlock(), amount);
-                    displayParticles(
-                            getHandScreenLocation(event.getPlayer().getEyeLocation(), event.getHand() == EquipmentSlot.OFF_HAND),
-                            trace.getHitBlock(), amount > 0);
+                    cycleBlockFromPlayer(event.getPlayer(), trace.getHitBlock(), amount, event.getHand() == EquipmentSlot.OFF_HAND);
                 }
             }
         }
