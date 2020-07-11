@@ -72,6 +72,28 @@ public class Paintbrush extends JavaPlugin implements Listener
         getServer().getPluginManager().registerEvents(this, this);
     }
     
+    private static String getBaseName(String key)
+    {
+        for(String color : colors)
+        {
+            if(key.startsWith(color + "_"))
+            {
+                return key.substring(color.length() + 1);
+            }
+        }
+        return null;
+    }
+    
+    public static List<Material> getCycle(Material material)
+    {
+        String baseName = getBaseName(material.getKey().getKey());
+        if(baseName == null || !cycles.containsKey(baseName))
+        {
+            return null;
+        }
+        return cycles.get(baseName);
+    }
+    
     public static ItemStack generatePaintbrush()
     {
         ItemStack paintbrush = new ItemStack(Material.PAPER, 1);
