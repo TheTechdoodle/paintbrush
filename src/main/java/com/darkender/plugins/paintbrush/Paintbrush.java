@@ -1,15 +1,19 @@
 package com.darkender.plugins.paintbrush;
 
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
+import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.RayTraceResult;
 
 import java.util.*;
 
@@ -94,6 +98,27 @@ public class Paintbrush extends JavaPlugin implements Listener
         return cycles.get(baseName);
     }
     
+    public static boolean cycleBlock(Block block, int amount)
+    {
+        List<Material> cycle = getCycle(block.getType());
+        if(cycle == null)
+        {
+            return false;
+        }
+        
+        int newPos = cycle.indexOf(block.getType()) + amount;
+        while(newPos >= cycle.size())
+        {
+            newPos -= cycle.size();
+        }
+        while(newPos < 0)
+        {
+            newPos += cycle.size();
+        }
+        block.setType(cycle.get(newPos));
+        return true;
+    }
+    
     public static ItemStack generatePaintbrush()
     {
         ItemStack paintbrush = new ItemStack(Material.PAPER, 1);
@@ -112,5 +137,43 @@ public class Paintbrush extends JavaPlugin implements Listener
         meta.getPersistentDataContainer().set(paintbrushKey, PersistentDataType.BYTE, (byte) 1);
         paintbrush.setItemMeta(meta);
         return paintbrush;
+    }
+    
+    public static boolean isPaintbrush(ItemStack item)
+    {
+        if(item == null || !item.hasItemMeta())
+        {
+            return false;
+        }
+        return item.getItemMeta().getPersistentDataContainer().has(paintbrushKey, PersistentDataType.BYTE);
+    }
+    
+    private RayTraceResult raytraceFor(Player player)
+    {
+        Location rayStart = player.getEyeLocation();
+        return rayStart.getWorld().rayTraceBlocks(rayStart, player.getEyeLocation().getDirection(),
+                25, FluidCollisionMode.NEVER, true);
+    }
+    
+    @EventHandler
+    private void onPlayerInteract(PlayerInteractEvent event)
+    {
+        if(isPaintbrush(event.getItem()) && event.getPlayer().hasPermission("paintbrush.use"))
+        {
+            event.setCancelled(true);
+            int amount = (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) ? 1 : -1;
+            if(event.getClickedBlock() != null)
+            {
+                cycleBlock(event.getClickedBlock(), amount);
+            }
+            else
+            {
+                RayTraceResult trace = raytraceFor(event.getPlayer());
+                if(trace.getHitBlock() != null)
+                {
+                    cycleBlock(trace.getHitBlock(), amount);
+                }
+            }
+        }
     }
 }
