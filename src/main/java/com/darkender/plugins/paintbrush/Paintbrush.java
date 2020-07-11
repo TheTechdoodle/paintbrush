@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -198,12 +199,16 @@ public class Paintbrush extends JavaPlugin implements Listener
         }
     }
     
-    private void cycleBlockFromPlayer(Player player, Block block, int amount, boolean offhand)
+    private boolean cycleBlockFromPlayer(Player player, Block block, int amount, boolean offhand)
     {
-        cycleBlock(block, amount);
+        if(!cycleBlock(block, amount))
+        {
+            return false;
+        }
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
                 SoundCategory.MASTER, 1.0F, amount > 0 ? 1.0F : 0.6F);
         displayParticles(getHandScreenLocation(player.getEyeLocation(), offhand), block, amount > 0);
+        return true;
     }
     
     @EventHandler
@@ -223,6 +228,30 @@ public class Paintbrush extends JavaPlugin implements Listener
                 if(trace != null && trace.getHitBlock() != null)
                 {
                     cycleBlockFromPlayer(event.getPlayer(), trace.getHitBlock(), amount, event.getHand() == EquipmentSlot.OFF_HAND);
+                }
+            }
+        }
+    }
+    
+    @EventHandler(ignoreCancelled = true)
+    public void onPlayerItemHeld(PlayerItemHeldEvent event)
+    {
+        if(event.getNewSlot() != event.getPreviousSlot() &&
+                isPaintbrush(event.getPlayer().getInventory().getItem(event.getPreviousSlot())) &&
+                event.getPlayer().hasPermission("paintbrush.use"))
+        {
+            RayTraceResult trace = raytraceFor(event.getPlayer());
+            if(trace != null && trace.getHitBlock() != null)
+            {
+                int amount = event.getNewSlot() - event.getPreviousSlot();
+                // Scrolling past bounds
+                if((event.getPreviousSlot() == 0 && event.getNewSlot() > 4) || (event.getPreviousSlot() == 8 && event.getNewSlot() < 4))
+                {
+                    amount = amount > 0 ? -1 : 1;
+                }
+                if(cycleBlockFromPlayer(event.getPlayer(), trace.getHitBlock(), amount, false))
+                {
+                    event.setCancelled(true);
                 }
             }
         }
